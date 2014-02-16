@@ -2,36 +2,59 @@
 
 import os
 import requests
+import praw
 from bs4 import BeautifulSoup
 
-url = 'http://www.reddit.com/r/wallpapers'
+def get_reddit_links(subreddit, count):
+    pr = praw.Reddit(user_agent='wallpaper-fetcher - Source at github.com/elewis/wallpaper-fetcher')
+    return pr.get_subreddit(subreddit).get_hot(limit=count)
 
-print('Fetching top post from /r/wallpapers...')
-page = BeautifulSoup(requests.get(url).text)
-
-entries = page.find_all('p', attrs={'class': 'title'})
-links = [str(p.a['href']) for p in entries]
-
-def save_image(href):
-    extensions = ('.jpg', '.png', '.jpeg')
-    if not href.endswith(extensions):
-        href += '.jpg'
-    id =  href.split('/')[-1]
-    path = 'images/' + id
-
+def download_image(href, filepath):
+    if not href.startswith('http://'):
+        href = 'http://' + href
     stream = requests.get(href, stream=True)
     if stream.status_code == 200:
-        with open(path, 'wb') as f:
-            for chunk in stream.iter_content():
-                f.write(chunk)
-    return path
+        with open(filepath, 'wb') as f:
+            for block in stream.iter_content():
+                f.write(block)
 
-print('Loading "' + links[0] + '"...')
-print('Saving image...')
-filename = save_image(links[0])
-print('Image saved to "' + filename + '"')
+def get_imgur_images(href):
+    """
+    Return list of links to direct images from an imgur page (direct, single image, or album).
+    """
+    # href is already a direct image link
+    if 'i.imgur.com' in href:
+        return [str(href)]
 
-print
-print('Setting desktop background...')
-command = "gsettings set org.gnome.desktop.background picture-uri 'file://{}'"
-os.system(command.format(os.path.abspath(filename)))
+    page = BeautifulSoup(requests.get(href).text)
+    # Imgur album
+    if 'imgur.com/a/' in href:
+        return [str(a['href'].lstrip('/')) for a in page.select('.album-view-image-link a')[0]]
+    # Single Image
+    elif 'imgur.com' in href:
+        return [str(page.select('.image a')[0]['href'].lstrip('/'))]
+    else:
+        raise ValueError('not an imgur link: ' + str(href))
+
+
+
+print('Fetching top imgur post from /r/wallpapers')
+for submission in get_reddit_links('wallpapers', 25):
+    if 'imgur.com' in submission.url:
+        post = submission
+        break
+
+print('Parsing image location from page...')
+imgur_images = get_imgur_images(post.url)
+
+print('Downloading first image...')
+url = imgur_images[0]
+dirname = 'images'
+id_, ext = url.split('/')[-1].split('.')
+filepath = os.path.abspath(os.path.join(dirname, id_ + '.' + ext))
+download_image(url, filepath)
+print('Image saved at "{}"'.format(filepath))
+
+print('Setting as desktop background...')
+os.system("gsettings set org.gnome.desktop.background picture-options \"zoom\"")
+os.system("gsettings set org.gnome.desktop.background picture-uri \"file://{}\"".format(filepath))
