@@ -54,9 +54,8 @@ for submission in get_reddit_links('wallpapers', 25):
 
     print('Downloading image...')
     for url in imgur_images:
-        dirname = 'images'
         id_, ext = url.split('/')[-1].split('.')
-        filepath = os.path.abspath(os.path.join(dirname, id_ + '.' + ext))
+        filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'images', id_ + '.' + ext)
         image_accepted = download_image(url, filepath)
 
         if image_accepted:
