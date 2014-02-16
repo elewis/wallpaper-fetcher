@@ -9,14 +9,17 @@ def get_reddit_links(subreddit, count):
     pr = praw.Reddit(user_agent='wallpaper-fetcher - Source at github.com/elewis/wallpaper-fetcher')
     return pr.get_subreddit(subreddit).get_hot(limit=count)
 
-def download_image(href, filepath):
+def download_image(href, filepath, overwrite=False):
     if not href.startswith('http://'):
         href = 'http://' + href
-    stream = requests.get(href, stream=True)
-    if stream.status_code == 200:
-        with open(filepath, 'wb') as f:
-            for block in stream.iter_content():
-                f.write(block)
+    if os.path.exists(filepath) and not overwrite:
+        print('Skipping download (file already exists)')
+    else:
+        stream = requests.get(href, stream=True)
+        if stream.status_code == 200:
+            with open(filepath, 'wb') as f:
+                for block in stream.iter_content():
+                    f.write(block)
 
 def get_imgur_images(href):
     """
