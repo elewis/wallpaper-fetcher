@@ -14,12 +14,14 @@ def download_image(href, filepath, overwrite=False):
         href = 'http://' + href
     if os.path.exists(filepath) and not overwrite:
         print('Skipping download (file already exists)')
+        return False
     else:
         stream = requests.get(href, stream=True)
         if stream.status_code == 200:
             with open(filepath, 'wb') as f:
                 for block in stream.iter_content():
                     f.write(block)
+        return True
 
 def get_imgur_images(href):
     """
@@ -41,22 +43,27 @@ def get_imgur_images(href):
 
 
 
+image_accepted = False
 print('Fetching top imgur post from /r/wallpapers')
 for submission in get_reddit_links('wallpapers', 25):
     if 'imgur.com' in submission.url:
         post = submission
+
+    print('Parsing image location from page...')
+    imgur_images = get_imgur_images(post.url)
+
+    print('Downloading image...')
+    for url in imgur_images:
+        dirname = 'images'
+        id_, ext = url.split('/')[-1].split('.')
+        filepath = os.path.abspath(os.path.join(dirname, id_ + '.' + ext))
+        image_accepted = download_image(url, filepath)
+
+        if image_accepted:
+            print('Image saved at "{}"'.format(filepath))
+            break
+    if image_accepted:
         break
-
-print('Parsing image location from page...')
-imgur_images = get_imgur_images(post.url)
-
-print('Downloading first image...')
-url = imgur_images[0]
-dirname = 'images'
-id_, ext = url.split('/')[-1].split('.')
-filepath = os.path.abspath(os.path.join(dirname, id_ + '.' + ext))
-download_image(url, filepath)
-print('Image saved at "{}"'.format(filepath))
 
 print('Setting as desktop background...')
 os.system("gsettings set org.gnome.desktop.background picture-options \"zoom\"")
