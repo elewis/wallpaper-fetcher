@@ -1,0 +1,1 @@
+Placeholder file for the images folder. Downloaded wallpapers will be automatically saved here as 'imgurid.ext'. Previously downloaded images will be skipped on the next run of the script.
