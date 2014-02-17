@@ -45,9 +45,9 @@ def get_imgur_images(href):
 
 image_accepted = False
 print('Fetching top imgur post from /r/wallpapers')
-for submission in get_reddit_links('wallpapers', 25):
-    if 'imgur.com' in submission.url:
-        post = submission
+for post in get_reddit_links('wallpapers', 25):
+    if 'imgur.com' not in post.url:
+        continue
 
     print('Parsing image location from page...')
     imgur_images = get_imgur_images(post.url)
