@@ -34,7 +34,7 @@ def get_imgur_images(href):
     page = BeautifulSoup(requests.get(href).text)
     # Imgur album
     if 'imgur.com/a/' in href:
-        return [str(a['href'].lstrip('/')) for a in page.select('.album-view-image-link a')[0]]
+        return [str(a['href'].lstrip('/')) for a in page.select('#image-container a.zoom')]
     # Single Image
     elif 'imgur.com' in href:
         return [str(page.select('.image a')[0]['href'].lstrip('/'))]
