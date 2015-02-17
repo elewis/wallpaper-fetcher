@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import requests
 import praw
+import argparse
 from bs4 import BeautifulSoup
+
+from desktops import Xfce, Gnome
 
 def get_reddit_links(subreddit, count):
     pr = praw.Reddit(user_agent='wallpaper-fetcher - Source at github.com/elewis/wallpaper-fetcher')
@@ -41,29 +46,42 @@ def get_imgur_images(href):
     else:
         raise ValueError('not an imgur link: ' + str(href))
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--desktop", default="xfce", choices=("gnome", "xfce"))
+    parser.add_argument("-m", "--style", default="zoomed", choices=("auto", "zoomed", "tiled", "stretched", "scaled", "centered"))
+    parser.add_argument("--overwrite", action="store_true", help="overwrite previously downloaded image")
 
+    args = parser.parse_args()
 
-image_accepted = False
-print('Fetching top imgur post from /r/wallpapers')
-for post in get_reddit_links('wallpapers', 25):
-    if 'imgur.com' not in post.url:
-        continue
+    image_accepted = False
+    print('Fetching top imgur post from /r/wallpapers')
+    for post in get_reddit_links('wallpapers', 25):
+        if 'imgur.com' not in post.url:
+            continue
 
-    print('Parsing image location from page...')
-    imgur_images = get_imgur_images(post.url)
+        print('Parsing image location from page...')
+        imgur_images = get_imgur_images(post.url)
 
-    print('Downloading image...')
-    for url in imgur_images:
-        id_, ext = url.split('/')[-1].split('.')
-        filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'images', id_ + '.' + ext)
-        image_accepted = download_image(url, filepath)
+        print('Downloading image...')
+        for url in imgur_images:
+            id_, ext = url.split('/')[-1].split('.')
+            filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'images', id_ + '.' + ext)
+            image_accepted = download_image(url, filepath, overwrite=args.overwrite)
 
+            if image_accepted:
+                print('Image saved at "{}"'.format(filepath))
+                break
         if image_accepted:
-            print('Image saved at "{}"'.format(filepath))
             break
-    if image_accepted:
-        break
 
-print('Setting as desktop background...')
-os.system("gsettings set org.gnome.desktop.background picture-options \"zoom\"")
-os.system("gsettings set org.gnome.desktop.background picture-uri \"file://{}\"".format(filepath))
+    print('Setting as desktop background...')
+    if args.desktop == "xfce":
+        Xfce().set_background(filepath, style=args.style)
+    elif args.desktop == "gnome":
+        Gnome().set_background(filepath, style=args.style)
+    else:
+        print("Your desktop is unsupported")
+
+if __name__ == "__main__":
+    main()
