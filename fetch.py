@@ -49,7 +49,7 @@ def get_imgur_images(href):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--desktop", default="xfce", choices=("gnome", "xfce"))
-    parser.add_argument("-m", "--style", default="zoomed", choices=("auto", "zoomed", "tiled", "stretched", "scaled", "centered"))
+    parser.add_argument("-s", "--style", default="zoomed", choices=("auto", "centered", "scaled", "spanned", "stretched", "tiled", "wallpaper", "zoomed"))
     parser.add_argument("--overwrite", action="store_true", help="overwrite previously downloaded image")
 
     args = parser.parse_args()
